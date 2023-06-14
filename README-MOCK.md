@@ -1,0 +1,15 @@
+## Mockup server routes:
+    valid_routes = {
+        ["/ws"]                         = "Websocket echo server",
+        ["/get"]                        = "Accepts a GET request and returns it in JSON format",
+        ["/xml"]                        = "Returns a simple XML document",
+        ["/post"]                       = "Accepts a POST request and returns it in JSON format",
+        ["/response-headers?:key=:val"] = "Returns given response headers",
+        ["/cache/:n"]                   = "Sets a Cache-Control header for n seconds",
+        ["/anything"]                   = "Accepts any request and returns it in JSON format",
+        ["/request"]                    = "Alias to /anything",
+        ["/delay/duration"]            = "Delay the response for <duration> seconds",
+        ["/basic-auth/:user/:pass"]     = "Performs HTTP basic authentication with the given credentials",
+        ["/status/:code"]               = "Returns a response with the specified <status code>",
+        ["/stream/:num"]                = "Stream <num> chunks of JSON data via chunked Transfer Encoding",
+    },
