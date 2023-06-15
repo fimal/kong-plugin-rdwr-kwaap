@@ -1,36 +1,27 @@
 local helpers    = require "spec.helpers"
+local conf_loader = require "kong.conf_loader"
+
 local PLUGIN_NAME = "rdwr-kwaap"
--- local ENFORCER_SERVICE_PORT = 15555
--- local ENFORCER_SERVICE_ADDRESS = "localhost"
-local ENFORCER_SERVICE_PORT = 31012
-local ENFORCER_SERVICE_ADDRESS = "10.195.5.195"
--- create 2 servers to the routed and normal traffic
-local fixtures = {
-  http_mock = {
-    upstream = [[
-    server {
-      server_name ;
-      listen 16798;
-      keepalive_requests     10;
+-- local spec_path = debug.getinfo(1).source:match("@?(.*/)")
 
-      location = / {
-        echo 'rerouted';
-      }
-    }
-    ]],
-    normal = [[
-    server {
-      server_name normal.com;
-      listen 16799;
-      keepalive_requests     10;
+-- create 2 servers enforcer and upstream server
+local fixtures = require "spec.rdwr-kwaap.fixtures.rdwr-mock-servers.enforcer-block-403"
 
-      location = / {
-        echo 'normal';
-      }
-    }
-    ]]
-  }
-}
+local ENFORCER_SERVICE_PORT = 1234
+local ENFORCER_SERVICE_ADDRESS = "localhost"
+-- local ENFORCER_SERVICE_PORT = 31012
+-- local ENFORCER_SERVICE_ADDRESS = "10.195.5.195"
+
+local bodyPath="/kong-plugin/spec/rdwr-kwaap/body/"
+local file, err = io.open(bodyPath .. "20k.json", "r")
+if file ~= nil then
+  jsonData = file:read("*a")
+  file:close()
+else
+  print("Error to read file from " .. bodyPath .. "Error= " .. err)
+  return nil, err
+end
+
 for _, strategy in helpers.each_strategy() do
   describe("Plugin: " .. PLUGIN_NAME .. ": (access) [#" .. strategy .. "]", function()
     local proxy_client
@@ -52,6 +43,7 @@ for _, strategy in helpers.each_strategy() do
           name = "httpbin",
           protocol = "http",
           host = "httpbin.kwaf-demo.test",
+          url = "http://localhost:5678"
       }
       bp.plugins:insert {
         route = { id = route1.id },
@@ -73,7 +65,7 @@ for _, strategy in helpers.each_strategy() do
         -- use the custom test template to create a local mock server
         nginx_conf = "spec/fixtures/custom_nginx.template",
         plugins = "bundled," .. PLUGIN_NAME,
-      }))
+      },nil, nil, fixtures))
     end)
 
     lazy_teardown(function()
@@ -90,13 +82,21 @@ for _, strategy in helpers.each_strategy() do
       end
     end)
     
-    it("request get ; 200 OK ; path: /api", function()
+    it("request post ; 403 Forbidden ; path: /api", function()
       local res = assert( proxy_client:send {
         method  = "POST",
-        path    = "/api/delay/5",
-        headers =  { host = "httpbin.kwaf-demo.test" }
+        path    = "/api/1.log",
+        body    = jsonData,
+        headers =  { host = "httpbin.kwaf-demo.test",
+        ["Content-Type"] = "application/json"},
       })
-      assert.response(res).has.status(200)
+      assert.response(res).has.status(403)
+      local body = string.gsub(res:read_body(), "^%s*(.-)%s*$", "%1")
+      assert.same(body, "10240\n20427\ntrue")
     end)
   end)
   end
+  -- response_body
+  -- Content-Length: 10240
+  -- x-enforcer-original-content-length: 20427
+  -- x-envoy-auth-partial-body: true

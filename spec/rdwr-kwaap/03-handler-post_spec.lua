@@ -1,9 +1,19 @@
 local helpers    = require "spec.helpers"
 local PLUGIN_NAME = "rdwr-kwaap"
+local json = require("cjson.safe")
 -- local ENFORCER_SERVICE_PORT = 15555
 -- local ENFORCER_SERVICE_ADDRESS = "localhost"
 local ENFORCER_SERVICE_PORT = 31012
 local ENFORCER_SERVICE_ADDRESS = "10.195.5.195"
+local bodyPath="/kong-plugin/spec/rdwr-kwaap/body/"
+local file, err = io.open(bodyPath .. "10k.json", "r")
+if file ~= nil then
+  jsonData = file:read("*a")
+  file:close()
+else
+  print("Error to read file from " .. bodyPath .. "Error= " .. err)
+  return nil, err
+end
 
 for _, strategy in helpers.each_strategy() do
   describe("Plugin: " .. PLUGIN_NAME .. ": (access) [#" .. strategy .. "]", function()
@@ -68,7 +78,7 @@ for _, strategy in helpers.each_strategy() do
       local res = assert( proxy_client:send {
         method  = "POST",
         path    = "/api/post",
-        body    = { hello = "world" },
+        body    = jsonData,
         headers =  { host = "httpbin.kwaf-demo.test",
         ["Content-Type"] = "application/json"},
       })

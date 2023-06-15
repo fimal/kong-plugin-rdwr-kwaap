@@ -1,9 +1,9 @@
 local helpers    = require "spec.helpers"
 local PLUGIN_NAME = "rdwr-kwaap"
--- local ENFORCER_SERVICE_PORT = 15555
--- local ENFORCER_SERVICE_ADDRESS = "localhost"
-local ENFORCER_SERVICE_PORT = 31012
-local ENFORCER_SERVICE_ADDRESS = "10.195.5.195"
+local ENFORCER_SERVICE_PORT = 15555
+local ENFORCER_SERVICE_ADDRESS = "localhost"
+-- local ENFORCER_SERVICE_PORT = 31012
+-- local ENFORCER_SERVICE_ADDRESS = "10.195.5.195"
 
 for _, strategy in helpers.each_strategy() do
   describe("Plugin: " .. PLUGIN_NAME .. ": (access) [#" .. strategy .. "]", function()
