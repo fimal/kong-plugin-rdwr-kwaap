@@ -1,37 +1,29 @@
 local helpers    = require "spec.helpers"
+local cjson     = require "cjson"
 local conf_loader = require "kong.conf_loader"
+local http = require "resty.http"
 
 local PLUGIN_NAME = "rdwr-kwaap"
 -- local spec_path = debug.getinfo(1).source:match("@?(.*/)")
 
 -- create 2 servers enforcer and upstream server
-local fixtures = require "spec.rdwr-kwaap.fixtures.rdwr-mock-servers.enforcer-block-403"
+local fixtures = require "spec.rdwr-kwaap.fixtures.rdwr-mock-servers.enforcer-timeout"
 
 local ENFORCER_SERVICE_PORT = 1234
 local ENFORCER_SERVICE_ADDRESS = "localhost"
 -- local ENFORCER_SERVICE_PORT = 31012
 -- local ENFORCER_SERVICE_ADDRESS = "10.195.5.195"
 
-local bodyPath="/kong-plugin/spec/rdwr-kwaap/body/"
-local file, err = io.open(bodyPath .. "20k.json", "r")
-if file ~= nil then
-  jsonData = file:read("*a")
-  file:close()
-else
-  print("Error to read file from " .. bodyPath .. "Error= " .. err)
-  return nil, err
-end
-
 for _, strategy in helpers.each_strategy() do
   describe("Plugin: " .. PLUGIN_NAME .. ": (access) [#" .. strategy .. "]", function()
     local proxy_client
-
     lazy_setup(function()
       local bp = helpers.get_db_utils(strategy, {
         "plugins",
         "routes",
         "services",
       })
+
       local httpbin_service = bp.services:insert {
           name = "httpbin",
           protocol = "http",
@@ -51,7 +43,7 @@ for _, strategy in helpers.each_strategy() do
         enforcer_service_address= ENFORCER_SERVICE_ADDRESS,
         enforcer_service_port= ENFORCER_SERVICE_PORT,
         max_req_bytes= 10240,
-        fail_open= true,
+        fail_open= false,
         connect_timeout= 1000,
         send_timeout= 1000,
         read_timeout= 1000,
@@ -80,22 +72,15 @@ for _, strategy in helpers.each_strategy() do
         proxy_client:close()
       end
     end)
-    
-    it("request post ; 403 Forbidden ; path: /api", function()
+    it("request get enforcer timeout ; 406 CustomNotAcceptable ; path: /api", function()
       local res = assert( proxy_client:send {
-        method  = "POST",
-        path    = "/api/1.log",
-        body    = jsonData,
-        headers =  { host = "httpbin.kwaf-demo.test",
-        ["Content-Type"] = "application/json"},
+        method  = "GET",
+        path    = "/api/get",
+        headers =  { host = "httpbin.kwaf-demo.test" }
       })
-      assert.response(res).has.status(403)
+      assert.response(res).has.status(406)
       local body = string.gsub(res:read_body(), "^%s*(.-)%s*$", "%1")
-      assert.same(body, "10240\n20427\ntrue")
+      assert.same(body, "CustomNotAcceptable")
     end)
   end)
   end
-  -- response_body
-  -- Content-Length: 10240
-  -- x-enforcer-original-content-length: 20427
-  -- x-envoy-auth-partial-body: true

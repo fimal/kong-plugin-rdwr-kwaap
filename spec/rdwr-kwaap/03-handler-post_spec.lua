@@ -1,10 +1,10 @@
 local helpers    = require "spec.helpers"
 local PLUGIN_NAME = "rdwr-kwaap"
 local json = require("cjson.safe")
--- local ENFORCER_SERVICE_PORT = 15555
--- local ENFORCER_SERVICE_ADDRESS = "localhost"
-local ENFORCER_SERVICE_PORT = 31012
-local ENFORCER_SERVICE_ADDRESS = "10.195.5.195"
+local ENFORCER_SERVICE_PORT = 15555
+local ENFORCER_SERVICE_ADDRESS = "localhost"
+-- local ENFORCER_SERVICE_PORT = 31012
+-- local ENFORCER_SERVICE_ADDRESS = "10.195.5.195"
 local bodyPath="/kong-plugin/spec/rdwr-kwaap/body/"
 local file, err = io.open(bodyPath .. "10k.json", "r")
 if file ~= nil then
@@ -74,7 +74,7 @@ for _, strategy in helpers.each_strategy() do
       end
     end)
     
-    it("request post ; 200OK ; path: /api", function()
+    it("request post ; 200 OK ; path: /api", function()
       local res = assert( proxy_client:send {
         method  = "POST",
         path    = "/api/post",

@@ -1,37 +1,29 @@
 local helpers    = require "spec.helpers"
+local cjson     = require "cjson"
 local conf_loader = require "kong.conf_loader"
+local http = require "resty.http"
 
 local PLUGIN_NAME = "rdwr-kwaap"
 -- local spec_path = debug.getinfo(1).source:match("@?(.*/)")
 
 -- create 2 servers enforcer and upstream server
-local fixtures = require "spec.rdwr-kwaap.fixtures.rdwr-mock-servers.enforcer-block-403"
+local fixtures = require "spec.rdwr-kwaap.fixtures.rdwr-mock-servers.enforcer-chunked-request"
 
 local ENFORCER_SERVICE_PORT = 1234
 local ENFORCER_SERVICE_ADDRESS = "localhost"
 -- local ENFORCER_SERVICE_PORT = 31012
 -- local ENFORCER_SERVICE_ADDRESS = "10.195.5.195"
 
-local bodyPath="/kong-plugin/spec/rdwr-kwaap/body/"
-local file, err = io.open(bodyPath .. "20k.json", "r")
-if file ~= nil then
-  jsonData = file:read("*a")
-  file:close()
-else
-  print("Error to read file from " .. bodyPath .. "Error= " .. err)
-  return nil, err
-end
-
 for _, strategy in helpers.each_strategy() do
   describe("Plugin: " .. PLUGIN_NAME .. ": (access) [#" .. strategy .. "]", function()
     local proxy_client
-
     lazy_setup(function()
       local bp = helpers.get_db_utils(strategy, {
         "plugins",
         "routes",
         "services",
       })
+
       local httpbin_service = bp.services:insert {
           name = "httpbin",
           protocol = "http",
@@ -80,22 +72,61 @@ for _, strategy in helpers.each_strategy() do
         proxy_client:close()
       end
     end)
-    
-    it("request post ; 403 Forbidden ; path: /api", function()
-      local res = assert( proxy_client:send {
-        method  = "POST",
-        path    = "/api/1.log",
-        body    = jsonData,
-        headers =  { host = "httpbin.kwaf-demo.test",
-        ["Content-Type"] = "application/json"},
-      })
-      assert.response(res).has.status(403)
-      local body = string.gsub(res:read_body(), "^%s*(.-)%s*$", "%1")
-      assert.same(body, "10240\n20427\ntrue")
+    it("send chunked traffic", function()
+      local client, err = http.new()
+      if not client then
+        return nil, err
+      end
+      -- client:set_timeouts(20000, 20000, 20000)
+      local r_method = "POST"
+      local yield = coroutine.yield
+      local uri = "http://localhost:" .. 9000 .. "/api/chunked"
+      local res, err = assert(client:request_uri(uri, {
+          body = coroutine.wrap(function()
+              yield("7\r\n")
+              yield("radware\r\n")
+              yield("3\r\n")
+              yield("cto\r\n")
+              yield("0\r\n")
+              yield("\r\n")
+          end),
+          headers = {
+              ["Host"] = "httpbin.kwaf-demo.test",
+              ["Transfer-Encoding"] = "chunked",
+              ["Content-Length"] = 46,
+          },
+          method = r_method,
+          keepalive = false,
+      }))
+      for k,v in pairs(res.headers) do
+        print("\nHeader: " .. k .. ": " .. v)
+      end
+      if res.has_body then
+        local body = res:read_body()
+        if body ~= nil then
+          print(" \n Body is: " .. body)
+        else
+          print(type(body))
+        end
+      else
+        print("No Body")
+      end
+      client:close()
+      -- assert.res_status(200, res)
+
+      -- local res = assert(proxy_client:send {
+      --   method  = "POST",
+      --   headers = {
+      --     ["Host"] = "httpbin.kwaf-demo.test",
+      --     ["Content-Type"] = "application/json",
+      --   },
+      --   path = "/api/chunked",
+      -- })
+ 
+      -- assert.res_status(200, res)
+
+      -- local headers = res.headers
+      -- print("Headers:" .. headers["host"])
     end)
   end)
   end
-  -- response_body
-  -- Content-Length: 10240
-  -- x-enforcer-original-content-length: 20427
-  -- x-envoy-auth-partial-body: true

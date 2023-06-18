@@ -13,7 +13,7 @@ local ENFORCER_SERVICE_ADDRESS = "localhost"
 -- local ENFORCER_SERVICE_ADDRESS = "10.195.5.195"
 
 local bodyPath="/kong-plugin/spec/rdwr-kwaap/body/"
-local file, err = io.open(bodyPath .. "20k.json", "r")
+local file, err = io.open(bodyPath .. "10k.json", "r")
 if file ~= nil then
   jsonData = file:read("*a")
   file:close()
@@ -32,6 +32,7 @@ for _, strategy in helpers.each_strategy() do
         "routes",
         "services",
       })
+
       local httpbin_service = bp.services:insert {
           name = "httpbin",
           protocol = "http",
@@ -91,11 +92,11 @@ for _, strategy in helpers.each_strategy() do
       })
       assert.response(res).has.status(403)
       local body = string.gsub(res:read_body(), "^%s*(.-)%s*$", "%1")
-      assert.same(body, "10240\n20427\ntrue")
+      assert.same(body, "10213\nnil\nfalse")
     end)
   end)
   end
   -- response_body
-  -- Content-Length: 10240
-  -- x-enforcer-original-content-length: 20427
-  -- x-envoy-auth-partial-body: true
+  -- Content-Length: 10213
+  -- x-enforcer-original-content-length: nil
+  -- x-envoy-auth-partial-body: false
