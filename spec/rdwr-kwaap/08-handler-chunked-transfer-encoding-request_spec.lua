@@ -98,35 +98,20 @@ for _, strategy in helpers.each_strategy() do
           method = r_method,
           keepalive = false,
       }))
-      for k,v in pairs(res.headers) do
-        print("\nHeader: " .. k .. ": " .. v)
-      end
-      if res.has_body then
-        local body = res:read_body()
-        if body ~= nil then
-          print(" \n Body is: " .. body)
-        else
-          print(type(body))
-        end
-      else
-        print("No Body")
-      end
+      -- for k,v in pairs(res.headers) do
+      --   print("\nHeader: " .. k .. ": " .. v)
+      -- end
+      -- if res.has_body then
+      --   local body = res:read_body()
+      --   if body ~= nil then
+      --     print(" \n Body is: " .. body)
+      --   else
+      --     print(type(body))
+      --   end
+      -- else
+      --   print("No Body")
+      -- end
       client:close()
-      -- assert.res_status(200, res)
-
-      -- local res = assert(proxy_client:send {
-      --   method  = "POST",
-      --   headers = {
-      --     ["Host"] = "httpbin.kwaf-demo.test",
-      --     ["Content-Type"] = "application/json",
-      --   },
-      --   path = "/api/chunked",
-      -- })
- 
-      -- assert.res_status(200, res)
-
-      -- local headers = res.headers
-      -- print("Headers:" .. headers["host"])
     end)
   end)
   end
