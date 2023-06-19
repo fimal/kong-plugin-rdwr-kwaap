@@ -5,8 +5,8 @@ local schema = {
         name = PLUGIN_NAME,
         fields = {
                 -- the 'fields' array is the top-level entry with fields defined by Kong
-                { consumer = typedefs.no_consumer },  -- this plugin cannot be configured on a consumer (typical for auth plugins)
-                { protocols = typedefs.protocols_http },
+                { consumer = typedefs.no_consumer },  -- this plugin cannot be configured on a consumer, it will only be applied to Services or Routes (typical for auth plugins)
+                { protocols = typedefs.protocols_http }, -- this plugin will only run within Nginx HTTP module
                 { config = {
                     -- The 'config' record is the custom part of the plugin schema
                     type = "record",
@@ -42,7 +42,7 @@ local schema = {
                             required = false, },},
                         { partial_header_name = {
                             type = "string",
-                            default = "x-envoy-auth-partial-body",
+                            default = "x-enforcer-auth-partial-body",
                             required = false, },},
                         { connect_timeout = {
                             type = "number",
@@ -68,14 +68,14 @@ local schema = {
                             type = "string",
                             default = "60s",
                             required = false, },},
+                        },
                     },
-                    entity_checks = {
-                        -- add some validation rules across fields
-                        -- the following is silly because it is always true, since they are both required
-                        { at_least_one_of = { "enforcer_service_address", "enforcer_service_port" }, }
-                    },
-                  },
                 },
+        },
+        entity_checks = {
+            -- add some validation rules across fields
+            -- the following is silly because it is always true, since they are both required
+            { at_least_one_of = { "config.enforcer_service_address", "config.enforcer_service_port" }, }
             },
-        }
+    }
 return schema

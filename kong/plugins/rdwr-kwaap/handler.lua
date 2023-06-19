@@ -13,7 +13,7 @@ local function read_body()
   local read_length = "*all"
   -- read the body
   ngx_req.read_body()
-  local r_body = ngx_req.get_body_data()
+  r_body = ngx_req.get_body_data()
   if r_body == nil then
       kong.log.debug("get_body_data returned nil, reading from file")
       local file = ngx_req.get_body_file()
@@ -73,7 +73,7 @@ function plugin:access(plugin_conf)
   local url_prefix = kong.request.get_forwarded_prefix()
   -- check if strip path is enabled.
   if u_route["strip_path"] == true then
-      u_request_uri = string.gsub(r_request_uri, url_prefix,"/")
+      u_request_uri = string.gsub(r_request_uri, url_prefix,"")
       kong.log.debug("stripped request [" .. u_request_uri .. "], original uri [" .. r_request_uri .. "]")
   end
   -- request without body have nil content length
@@ -122,7 +122,7 @@ function plugin:access(plugin_conf)
       kong.log.debug("index of ? is=", i, " query is:",params.query, " request uri is: ", u_request_uri)
   end
   local res, err = httpc:request_uri("http://" .. enforcer_service_address .. ":" .. enforcer_service_port .. u_request_uri, params)
-  kong.log.debug("Request to enforcer [" .. u_request_uri .. "] and original uri [" .. r_request_uri .. "]")
+  kong.log.debug("Request to enforcer [" .. ":" .. enforcer_service_port .. u_request_uri .. "] and original uri [" .. r_request_uri .. "]")
   kong.log.debug("Original Host: [" .. kong.request.get_host() .. "] Upstream Host [" .. u_host .. "]")
   if not res then
       kong.log.debug("enforcer request failed ")
