@@ -27,39 +27,6 @@
   <img src="./doc/kong_kwaap.png" width="800" title="KWAAP Integration with KONG">
 </p>
 
-# DEV KONG ENVIRONMENT
-
-## All prerequisites are described in waas_helms/integrations/README.md
-## Please follow all instructions to install tools, kubernetes cluster, kwaap and  upstream servers -  waas_helms/integrations/README.md
-
-### Build custom kong container
-```bash
-    # waas_helms/integrations/kong-plugin-rdwr-kwaap
-    make build
-    make kong-dbless
-```
-### Check kong configuration
-```bash
-    curl  -i localhost:8001/services
-    curl  -i localhost:8001/routes
-    curl  -i localhost:8001/plugins
-```
-### Check E2E
-```bash
-    curl -i localhost:8000 -H "Host: httpbin.kwaf-demo.test"
-    # Attack:
-    curl -i localhost:8000/1.log -H "Host: httpbin.kwaf-demo.test"
-```
-
-# TESTING
-## HOW TO RUN PONGO FROM DOCKER CONTAINER
-
-```bash
-    # waas_helms/integrations/kong-plugin-rdwr-kwaap
-    make build-test
-    make test
-```
-
 # K8S KONG INGRESS Manual Configuration
 ### Create a ConfigMap or Secret with the plugin code
 ```bash
